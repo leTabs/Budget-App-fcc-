@@ -1,72 +1,92 @@
 class Category:
-
-    def __init__(self, category):
-        self.category = category
+    def __init__(self, name):
+        self.name = name
         self.ledger = []
-        self.balance = 0
-        self.withdraw_amount = 0
-
-    def check_funds(self, amount):
-        if amount < self.balance: return True
-        else: return False
-
-    def deposit(self,amount, description = ""):
-        self.balance += amount
+        
+    def deposit(self, amount, description=""):
         self.ledger.append({"amount": amount, "description": description})
+        # creating the deposit method 
 
-    def withdraw(self, amount, description = ""):
+    def withdraw(self, amount, description=""):
         if self.check_funds(amount):
-            self.ledger.append({"amount": - amount, "description": description})
-            self.balance -= amount
-            self.withdraw_amount += amount
+            self.ledger.append({"amount": -amount, "description": description})
             return True
-        else: return False
+        return False
+        # creating the withdraw method
 
     def get_balance(self):
-        return self.balance
+        balance = 0
+        for item in self.ledger:
+            balance += item["amount"]
+        return balance
+        # creating the balance method 
 
-    def transfer(self, amount, d_category):
+    def transfer(self, amount, category):
         if self.check_funds(amount):
-            self.withdraw(amount, f"Transfer to {d_category}")
-            d_category.deposit(amount, f"Transfer from {self.category}")
-            #print(d_category.category, self.category)
+            self.withdraw(amount, "Transfer to " + category.name)
+            category.deposit(amount, "Transfer from " + self.name)
             return True
-        else: return False
+        return False
+        # creating the transfer method
+
+    def check_funds(self, amount):
+        return amount <= self.get_balance()
+        # creating the check_funds method
 
     def __str__(self):
-        print('*************Food*************')
-        #print(self.ledger)
-        #print(self.ledger[0])
+        title = "*" * ((30 - len(self.name)) // 2) + self.name + "*" * ((30 - len(self.name)) // 2)
+        if len(title) < 30:
+            title += "*"
+        items = ""
         for item in self.ledger:
-            v =f"{item['amount']:.2f}"
-
-            print(f"{item['description'][:23]:<23}{str(v)[:7]:>}")
-        return f'Total: {self.get_balance()}'
-
-
-
-f = Category('FOOD')
-f.deposit(200, 'fist dep')
-f.withdraw(23, 'pasta')
-f.withdraw(45, 'restoraunt')
-#print(f.get_balance())
-#print(f)
-
-
-
-#print(f.get_balance())
-############################################################################
+            items += item["description"][:23].ljust(23) + "{:.2f}".format(item["amount"]).rjust(7) + "\n"
+        total = "Total: {:.2f}".format(self.get_balance())
+        return title + "\n" + items + total
+        # format the string representation of the class
+        
+        
 def create_spend_chart(categories):
-    line = 5
-    total = categories.withdraw_amount + categories.get_balance()
-    percentage = (categories.withdraw_amount * 100) / total
-    #print((percentage // 10) * 10 )
+    withdrawals = []
+    names = []
+    # will be used later
+    
+    for category in categories:
+        withdrawals.append(0)
+        for item in category.ledger:
+            if item["amount"] < 0:
+                withdrawals[-1] += abs(item["amount"])
+        names.append(category.name)
+        # append the widthrawls at a stand-by state and the name to the respective lists
 
-    print('Percentage spent by category')
-    for i in range(100,-10,-10):
-        print(f'{i:>3}|')
-    print('-'*10)
-    for i in categories.category:
-        print(f'{i:>{line}}')
-
-create_spend_chart(f)
+    withdrawals_total = sum(withdrawals)
+    # calculate the total amount of the withdrawals
+    withdrawals_percentage = []
+    for withdrawal in withdrawals:
+        percentage = withdrawal / withdrawals_total * 100
+        withdrawals_percentage.append(int(percentage // 10) * 10)
+        # calculate and append the percentages in the withdrawals_percentage list
+        
+    chart = "Percentage spent by category\n"
+    for i in range(100, -10, -10):
+        chart += str(i).rjust(3) + "| "
+        for percentage in withdrawals_percentage:
+            if percentage >= i:
+                chart += "o  "
+            else:
+                chart += "   "
+        chart += "\n"
+    chart += "    " + "-" * (len(categories) * 3 + 1) + "\n"
+    # format the chart accordingly
+    
+    max_name_length = max([len(name) for name in names])
+    for i in range(max_name_length):
+        chart += "     "
+        for name in names:
+            if i < len(name):
+                chart += name[i] + "  "
+            else:
+                chart += "   "
+        if i < max_name_length - 1:
+            chart += "\n"
+    # include the names of each category to the chart 
+    return chart
